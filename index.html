@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Hello World</title>
+</head>
+<script src="pixi.js"></script>
+<script src="spriteUtilities.js"></script>
+<style>
+    html, body {
+        margin: 0;
+    }
+    body {
+        height: 100vh;
+        overflow: hidden;
+    }
+</style>
+<body>
+<script type="text/javascript">
+    const doc = document.documentElement;
+    let clientHeight;
+    let clientWidth;
+    // получаем параметры экрана
+    setClientParams(false);
+
+    const app = new PIXI.Application(
+      {
+        width: 1024,
+        height: 1024,
+        transparent: false
+      }
+    );
+    const u = new SpriteUtilities(PIXI);
+    // устанавливаем bg
+    //const bg = setBg('bg_top.png', 0, 0);
+    //const bgMid = setBg('bg_bottom.png', 0, 203);
+    const bg = setBg('bg.png', 1024, 612, 0, 0);
+    const human = u.sprite('human.png', 100, 430);
+    var carrotTex = PIXI.Texture.fromImage('carrot.png');
+    var bullets = [];
+    var bulletSpeed = 5;
+
+    function shoot(rotation, startPosition){
+      const bullet = u.sprite('carrot.png');
+      u.shoot(
+        human,           //The sprite that will be shooting
+        human.rotation,  //The angle at which to shoot
+        120,             //The x point on the tank where the bullet should start
+        -55,              //The y point on the tank where the bullet should start
+        app.stage,          //The container you want to add the bullet to
+        7,              //The bullet's speed (pixels per frame)
+        bullets,        //The array used to store the bullets
+        () => bullet
+      );
+      bullets.push(bullet)
+    }
+
+    function rotateToPoint(mx, my, px, py){
+      var self = this;
+      var dist_Y = my - py;
+      var dist_X = mx - px;
+      var angle = Math.atan2(dist_Y,dist_X);
+      //var degrees = angle * 180/ Math.PI;
+      return angle;
+    }
+
+    // start animating
+    //document.body.onmousemove = animate;
+    animate();
+    function animate() {
+      requestAnimationFrame(animate);
+      // just for fun, let's rotate mr rabbit a little
+      human.rotation = rotateToPoint(
+        app.renderer.plugins.interaction.mouse.global.x,
+        app.renderer.plugins.interaction.mouse.global.y,
+        human.position.x, human.position.y
+      );
+
+      for(var b=bullets.length-1;b>=0;b--){
+        bullets[b].position.x += Math.cos(bullets[b].rotation)*bulletSpeed;
+        bullets[b].position.y += Math.sin(bullets[b].rotation)*bulletSpeed;
+      }
+      // render the container
+      app.renderer.render(app.stage);
+    }
+    document.body.onclick = function(e){
+      console.log('rew');
+      shoot(human.rotation, {
+        x: (human.position.x + 60)+Math.cos(human.rotation)*20,
+        y: (human.position.y - 69)+Math.sin(human.rotation)*20
+      });
+      bullets.push()
+    }
+    human.anchor.set(0.5, 0.50);
+    app.stage.addChild(human);
+    //const blobs = createBlobs(10);
+    requestAnimationFrame(() => update(0.128));
+    // устанавливаем обработчик на изменения рамеров экрана
+    window.addEventListener('resize', setClientParams);
+
+    /**
+     * Функция изменения canvas контейнера приложения
+     * @param {boolean} flag - флаг для перерендеривания размера canvas приложения
+     */
+    function setClientParams(flag=true) {
+      clientHeight = doc.clientHeight;
+      clientWidth = doc.clientWidth;
+      flag && app.renderer.resize(clientWidth, clientHeight);
+    }
+
+    function createBlobs(counter) {
+      let instantX = 0;
+      let instantY = 0;
+      return new Array(counter).fill(1).map((item ,index) => {
+        instantX += 10;
+        instantY += 10;
+        const blob = u.sprite('blob.png', instantX, instantY);
+        app.stage.addChild(blob);
+        return blob;
+      })
+    }
+
+    function setBg(img, w, h, x, y) {
+      const bg = u.tilingSprite(img, w, h, x, y);
+      app.stage.addChild(bg);
+      return bg;
+    }
+
+    function update(speed) {
+      bg.tilePosition.x -= speed;
+      //bgMid.tilePosition.x -= 0.64;
+      app.renderer.render(app.stage);
+      requestAnimationFrame(() => update(speed));
+    }
+
+    setTimeout(() => {
+      update(0.900);
+    }, 1000)
+
+    //Add the canvas that Pixi automatically created for you to the HTML document
+    document.body.appendChild(app.view);
+</script>
+</body>
+</html>
