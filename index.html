@@ -6,6 +6,7 @@
 </head>
 <script src="pixi.js"></script>
 <script src="spriteUtilities.js"></script>
+<script src="bump.js"></script>
 <style>
     html, body {
         margin: 0;
@@ -31,27 +32,25 @@
       }
     );
     const u = new SpriteUtilities(PIXI);
+    const b = new Bump(PIXI);
     // устанавливаем bg
     //const bg = setBg('bg_top.png', 0, 0);
     //const bgMid = setBg('bg_bottom.png', 0, 203);
     const bg = setBg('bg.png', 1024, 612, 0, 0);
     const human = u.sprite('human.png', 100, 430);
-    var carrotTex = PIXI.Texture.fromImage('carrot.png');
+    const target = u.rectangle(64, 64, "seaGreen", "hotPink", 2);
+    target.position.x = 800;
+    target.position.y = 1024/2;
+    app.stage.addChild(target);
     var bullets = [];
     var bulletSpeed = 5;
 
     function shoot(rotation, startPosition){
       const bullet = u.sprite('carrot.png');
-      u.shoot(
-        human,           //The sprite that will be shooting
-        human.rotation,  //The angle at which to shoot
-        120,             //The x point on the tank where the bullet should start
-        -55,              //The y point on the tank where the bullet should start
-        app.stage,          //The container you want to add the bullet to
-        7,              //The bullet's speed (pixels per frame)
-        bullets,        //The array used to store the bullets
-        () => bullet
-      );
+      bullet.position.x = startPosition.x;
+      bullet.position.y = startPosition.y;
+      bullet.rotation = rotation;
+      app.stage.addChild(bullet);
       bullets.push(bullet)
     }
 
@@ -76,15 +75,19 @@
         human.position.x, human.position.y
       );
 
-      for(var b=bullets.length-1;b>=0;b--){
-        bullets[b].position.x += Math.cos(bullets[b].rotation)*bulletSpeed;
-        bullets[b].position.y += Math.sin(bullets[b].rotation)*bulletSpeed;
+      for(var i=bullets.length-1; i >= 0; i--){
+        const bull = bullets[i];
+        bull.position.x += Math.cos(bull.rotation)*bulletSpeed;
+        bull.position.y += Math.sin(bull.rotation)*bulletSpeed;
+        const check = b.hitTestRectangle(bull, target);
+        check && app.stage.removeChild(bull);
+        (bull.position.x > 1024 || check) && bullets.splice(i, 1);
       }
+      console.log(bullets)
       // render the container
       app.renderer.render(app.stage);
     }
     document.body.onclick = function(e){
-      console.log('rew');
       shoot(human.rotation, {
         x: (human.position.x + 60)+Math.cos(human.rotation)*20,
         y: (human.position.y - 69)+Math.sin(human.rotation)*20
@@ -108,18 +111,6 @@
       flag && app.renderer.resize(clientWidth, clientHeight);
     }
 
-    function createBlobs(counter) {
-      let instantX = 0;
-      let instantY = 0;
-      return new Array(counter).fill(1).map((item ,index) => {
-        instantX += 10;
-        instantY += 10;
-        const blob = u.sprite('blob.png', instantX, instantY);
-        app.stage.addChild(blob);
-        return blob;
-      })
-    }
-
     function setBg(img, w, h, x, y) {
       const bg = u.tilingSprite(img, w, h, x, y);
       app.stage.addChild(bg);
@@ -130,11 +121,12 @@
       bg.tilePosition.x -= speed;
       //bgMid.tilePosition.x -= 0.64;
       app.renderer.render(app.stage);
+      bulletSpeed = speed;
       requestAnimationFrame(() => update(speed));
     }
 
     setTimeout(() => {
-      update(0.900);
+      update(4);
     }, 1000)
 
     //Add the canvas that Pixi automatically created for you to the HTML document
